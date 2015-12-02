@@ -364,7 +364,7 @@ class ConfigTest(unittest.TestCase):
                 'volumes': ['/tmp'],
             }
         })
-        services = config.load(config_details)
+        services = config.load(config_details).services
 
         assert services[0]['name'] == 'volume'
         assert services[1]['name'] == 'db'
@@ -404,7 +404,7 @@ class ConfigTest(unittest.TestCase):
                 'name': 'web',
                 'build': '/',
                 'links': ['db'],
-                'volumes': ['/home/user/project:/code'],
+                'volumes': [VolumeSpec.parse('/home/user/project:/code')],
             },
             {
                 'name': 'db',
@@ -901,7 +901,7 @@ class VolumeConfigTest(unittest.TestCase):
                 None,
             )
         ).services[0]
-        self.assertEqual(d['volumes'], ['/host/path:/container/path'])
+        self.assertEqual(d['volumes'], [VolumeSpec.parse('/host/path:/container/path')])
 
     @pytest.mark.skipif(IS_WINDOWS_PLATFORM, reason='posix paths')
     @mock.patch.dict(os.environ)
@@ -1289,9 +1289,10 @@ class EnvTest(unittest.TestCase):
                 {'foo': {'build': '.', 'volumes': ['$HOSTENV:$CONTAINERENV']}},
                 "tests/fixtures/env",
             )
-
         ).services[0]
-        self.assertEqual(set(service_dict['volumes']), set(['/tmp:/host/tmp']))
+        self.assertEqual(
+            set(service_dict['volumes']),
+            set([VolumeSpec.parse('/tmp:/host/tmp')]))
 
         service_dict = config.load(
             build_config_details(
@@ -1299,7 +1300,9 @@ class EnvTest(unittest.TestCase):
                 "tests/fixtures/env",
             )
         ).services[0]
-        self.assertEqual(set(service_dict['volumes']), set(['/opt/tmp:/opt/host/tmp']))
+        self.assertEqual(
+            set(service_dict['volumes']),
+            set([VolumeSpec.parse('/opt/tmp:/opt/host/tmp')]))
 
 
 def load_from_filename(filename):
@@ -1754,7 +1757,7 @@ class BuildPathTest(unittest.TestCase):
         for valid_url in valid_urls:
             service_dict = config.load(build_config_details({
                 'validurl': {'build': valid_url},
-            }, '.', None))
+            }, '.', None)).services
             assert service_dict[0]['build'] == valid_url
 
     def test_invalid_url_in_build_path(self):
