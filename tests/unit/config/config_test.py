@@ -402,7 +402,7 @@ class ConfigTest(unittest.TestCase):
         expected = [
             {
                 'name': 'web',
-                'build': '/',
+                'build': os.path.abspath('/'),
                 'links': ['db'],
                 'volumes': [VolumeSpec.parse('/home/user/project:/code')],
             },
