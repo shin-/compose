@@ -166,7 +166,7 @@ def find(base_dir, filenames):
 def get_config_version(config_details):
     def get_version(config):
         if config.config is None:
-            return None
+            return 1
         version = config.config.get('version', 1)
         if isinstance(version, dict):
             version = 1
@@ -178,9 +178,6 @@ def get_config_version(config_details):
     for next_file in config_details.config_files[1:]:
         validate_top_level_object(next_file)
         next_file_version = get_version(next_file)
-        if version is None:
-            version = next_file_version
-            continue
 
         if version != next_file_version and next_file_version is not None:
             raise ConfigurationError(
