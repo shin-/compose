@@ -11,7 +11,6 @@ from docker.utils.ports import split_port
 from .cli.errors import UserError
 from .config.serialize import denormalize_config
 from .network import get_network_defs_for_service
-from .service import format_environment
 from .service import NoSuchImageError
 from .service import parse_repository_tag
 
@@ -179,10 +178,10 @@ def convert_service_to_bundle(name, service_dict, image_digest):
             continue
 
         if key == 'environment':
-            container_config['Env'] = format_environment({
+            container_config['Env'] = {
                 envkey: envvalue for envkey, envvalue in value.items()
                 if envvalue
-            })
+            }
             continue
 
         if key in SERVICE_KEYS:
@@ -256,3 +255,11 @@ def make_port_spec(value):
         'Protocol': components[2] or 'tcp',
         'Port': int(components[0]),
     }
+
+
+def format_environment(environment):
+    def format_env(key, value):
+        if value is None:
+            return key
+        return '{key}={value}'.format(key=key, value=value)
+    return [format_env(*item) for item in environment.items()]

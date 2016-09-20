@@ -127,7 +127,7 @@ def test_convert_service_to_bundle():
         ],
         'Networks': ['extra'],
         'Command': ['entry', 'foo'],
-        'Env': ['BAZ=ENV'],
+        'Env': {'BAZ': 'ENV'},
         'WorkingDir': '/tmp',
         'User': 'root',
         'Labels': {'FOO': 'LABEL'},

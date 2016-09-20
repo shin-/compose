@@ -287,7 +287,7 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(
             opts['labels'][LABEL_CONFIG_HASH],
             '2524a06fcb3d781aa2c981fc40bcfa08013bb318e4273bfa388df22023e6f2aa')
-        assert opts['environment'] == ['also=real']
+        assert opts['environment'] == {'also': 'real'}
 
     def test_get_container_create_options_sets_affinity_with_binds(self):
         service = Service(
@@ -318,7 +318,7 @@ class ServiceTest(unittest.TestCase):
             1,
             previous_container=prev_container)
 
-        assert opts['environment'] == ['affinity:container==ababab']
+        assert opts['environment'] == {'affinity:container': '=ababab'}
 
     def test_get_container_create_options_no_affinity_without_binds(self):
         service = Service('foo', image='foo', client=self.mock_client)
@@ -332,7 +332,7 @@ class ServiceTest(unittest.TestCase):
             {},
             1,
             previous_container=prev_container)
-        assert opts['environment'] == []
+        assert opts['environment'] == {}
 
     def test_get_container_not_found(self):
         self.mock_client.containers.return_value = []
