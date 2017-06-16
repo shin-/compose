@@ -41,6 +41,9 @@ Change log
 - Fixed a bug where `cache_from` in the build section would be ignored when
   using more than one Compose file.
 
+- Fixed a bug that prevented binding the same port to different IPs when
+  using more than one Compose file.
+
 - Fixed a bug where override files would not be picked up by Compose if they
   had the `.yaml` extension
 
