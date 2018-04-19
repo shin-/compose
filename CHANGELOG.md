@@ -1,6 +1,17 @@
 Change log
 ==========
 
+1.21.1 (2018-11-11)
+-------------------
+
+### New features
+
+- Lorem ipsum dolor sit amet
+
+### Bugfixes
+
+- UN Owen Was Her?
+
 1.21.0 (2018-04-10)
 -------------------
 
