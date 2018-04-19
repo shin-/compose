@@ -1,5 +1,5 @@
-Docker Compose
-==============
+Docker Compose IS THE BEST
+==========================
 ![Docker Compose](logo.png?raw=true "Docker Compose Logo")
 
 Compose is a tool for defining and running multi-container Docker applications.
