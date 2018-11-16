@@ -124,6 +124,11 @@ class NeedsBuildError(Exception):
         self.service = service
 
 
+class NeedsPullError(Exception):
+    def __init__(self, service):
+        self.service = service
+
+
 class NoSuchImageError(Exception):
     pass
 
@@ -164,6 +169,23 @@ class BuildAction(enum.Enum):
     skip = 2
 
 
+@enum.unique
+class PullPolicy(enum.Enum):
+    """ Enumeration for possible pull policies."""
+    always = 0
+    if_not_present = 1
+    never = 2
+
+    @classmethod
+    def convert(cls, policy):
+        if policy == 'always':
+            return cls.always
+        if policy == 'never':
+            return cls.never
+        # default
+        return cls.if_not_present
+
+
 class Service(object):
     def __init__(
         self,
@@ -194,6 +216,7 @@ class Service(object):
         self.scale_num = scale or 1
         self.default_platform = default_platform
         self.options = options
+        self.has_pulled = False
 
     def __repr__(self):
         return '<Service: {}>'.format(self.name)
@@ -339,8 +362,14 @@ class Service(object):
                                        (self.name, ex.explanation))
 
     def ensure_image_exists(self, do_build=BuildAction.none, silent=False):
+        # always build
         if self.can_be_built() and do_build == BuildAction.force:
             self.build()
+            return
+
+        # always pull
+        if not self.can_be_built() and self.pull_policy == PullPolicy.always:
+            self.pull(silent=silent)
             return
 
         try:
@@ -349,10 +378,15 @@ class Service(object):
         except NoSuchImageError:
             pass
 
+        # image pullable, missing
         if not self.can_be_built():
+            if self.pull_policy == PullPolicy.never:
+                raise NeedsPullError(self)
+
             self.pull(silent=silent)
             return
 
+        # image buildable, missing
         if do_build == BuildAction.skip:
             raise NeedsBuildError(self)
 
@@ -370,9 +404,13 @@ class Service(object):
 
     @property
     def image_name(self):
-        return self.options.get('image', '{project}_{s.name}'.format(
+        return self.options.get('image', {}).get('name', '{project}_{s.name}'.format(
             s=self, project=self.project.lstrip('_-')
         ))
+
+    @property
+    def pull_policy(self):
+        return PullPolicy.convert(self.options.get('image', {}).get('pull_policy'))
 
     @property
     def platform(self):
@@ -405,6 +443,10 @@ class Service(object):
 
     def _containers_have_diverged(self, containers):
         config_hash = None
+
+        # Attempt to pull newer image before computing the config_hash
+        if self.pull_policy == PullPolicy.always:
+            self.pull()
 
         try:
             config_hash = self.config_hash
@@ -1198,7 +1240,10 @@ class Service(object):
         if 'image' not in self.options:
             return
 
-        repo, tag, separator = parse_repository_tag(self.options['image'])
+        if self.has_pulled:  # Prevent multiple pull attempts in a single session
+            return
+
+        repo, tag, separator = parse_repository_tag(self.image_name)
         kwargs = {
             'tag': tag or 'latest',
             'stream': True,
@@ -1213,6 +1258,7 @@ class Service(object):
             )
 
         event_stream = self._do_pull(repo, kwargs, silent, ignore_pull_failures)
+        self.has_pulled = True
         if stream:
             return event_stream
         return progress_stream.get_digest_from_pull(event_stream)
@@ -1221,7 +1267,7 @@ class Service(object):
         if 'image' not in self.options or 'build' not in self.options:
             return
 
-        repo, tag, separator = parse_repository_tag(self.options['image'])
+        repo, tag, separator = parse_repository_tag(self.image_name)
         tag = tag or 'latest'
         log.info('Pushing %s (%s%s%s)...' % (self.name, repo, separator, tag))
         output = self.client.push(repo, tag=tag, stream=True)

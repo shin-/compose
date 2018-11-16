@@ -1067,6 +1067,7 @@ def merge_service_dicts(base, override, version):
     md.merge_field('blkio_config', merge_blkio_config, default={})
     md.merge_field('healthcheck', merge_healthchecks, default={})
     md.merge_field('deploy', merge_deploy, default={})
+    md.merge_field('image', merge_image, default={})
 
     for field in set(ALLOWED_KEYS) - set(md):
         md.merge_scalar(field)
@@ -1151,6 +1152,20 @@ def merge_deploy(base, override):
         placement_md.merge_field('preferences', merge_unique_objects_lists, default=[])
         md['placement'] = dict(placement_md)
 
+    return dict(md)
+
+
+def merge_image(base, override):
+    def to_dict(o):
+        if not o:
+            return {}
+        if isinstance(o, six.string_types):
+            return {"name": o}
+        return o
+
+    md = MergeDict(base or {}, override or {})
+    md.merge_scalar('name')
+    md.merge_scalar('pull_policy')
     return dict(md)
 
 

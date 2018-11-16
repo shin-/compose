@@ -41,6 +41,7 @@ from ..service import BuildError
 from ..service import ConvergenceStrategy
 from ..service import ImageType
 from ..service import NeedsBuildError
+from ..service import NeedsPullError
 from ..service import OperationFailedError
 from .command import get_config_from_options
 from .command import project_from_options
@@ -85,6 +86,10 @@ def main():
     except NeedsBuildError as e:
         log.error("Service '%s' needs to be built, but --no-build was passed." % e.service.name)
         sys.exit(1)
+    except NeedsPullError as e:
+        log.error(
+            "Service '{}' image needs to be pulled, but the service's pull "
+            "policy prevents it.".format(e.service.name))
     except NoSuchCommand as e:
         commands = "\n".join(parse_doc_section("commands:", getdoc(e.supercommand)))
         log.error("No such command: %s\n\n%s", e.command, commands)
